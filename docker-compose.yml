@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: book_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+    ports:
+      - "5432:5432"
+
+  backend:
+    container_name: book_backend
+    build: .
+    working_dir: /code
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /code/app
+    volumes:
+      # 開発中のコード変更を即時反映させるため、appディレクトリのみマウント
+      - ./app:/code/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+    environment:
+      - PYTHONPATH=/code
+
+  test:
+    build: .
+    working_dir: /code
+    # テスト実行時はボリュームをマウントせず、ビルド時のファイルを使用する
+    command: pytest
+    environment:
+      - PYTHONPATH=/code
+
+volumes:
+  postgres_data:
