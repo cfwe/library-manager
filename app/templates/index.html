@@ -13,6 +13,7 @@
         button { cursor: pointer; background-color: #007bff; color: white; border: none; }
         .form-group button { margin-top: 0.5em; }
         .book-list { list-style: none; padding: 0; }
+        .book-item > div:first-child { flex-grow: 1; }
         .book-item { border: 1px solid #ccc; padding: 1em; margin-bottom: 1em; display: flex; justify-content: space-between; align-items: center; }
         .book-item-actions button { width: auto; margin-left: 0.5em; }
         .status-message { margin-bottom: 1em; color: #dc3545; font-weight: bold; }
@@ -28,11 +29,20 @@
 
         <div class="form-group">
             <label for="isbn-lookup">ISBNコードで登録</label>
-            <input type="text" id="isbn-lookup" placeholder="ISBNコードを入力...">
+            <input type="text" id="isbn-lookup" placeholder="ISBNコードを入力..." onkeydown="if (event.key === 'Enter') addBook()">
             <button onclick="addBook()">書籍情報を取得して登録</button>
         </div>
 
         <div id="lookup-status" class="status-message"></div>
+
+        <hr>
+
+        <div class="filters form-group">
+            <input type="text" id="keyword-search" placeholder="キーワードで絞り込み..." oninput="filterBooks()">
+            <select id="publisher-filter" onchange="filterBooks()" style="margin-top: 0.5em;">
+                <option value="">すべての出版社</option>
+            </select>
+        </div>
 
         <h2>蔵書一覧</h2>
         <ul id="book-list" class="book-list">
@@ -41,12 +51,11 @@
                 <div>
                     <h3>{{ book.title }}</h3>
                     <p><strong>著者:</strong> {{ book.author or 'N/A' }}</p>
-                    <p><strong>出版社:</strong> {{ book.publisher or 'N/A' }}</p>
+                    <p><strong>出版社:</strong> <span class="publisher-name">{{ book.publisher or 'N/A' }}</span></p>
                     <p><strong>ISBN:</strong> {{ book.isbn }}</p>
                     <p><strong>中古価格:</strong> <span id="market-price-{{ book.id }}">{{ book.market_price or 'N/A' }}</span></p>
                 </div>
                 <div class="book-item-actions">
-                    <button onclick="editBook({{ book.id }}, this)">変更</button>
                     <button onclick="getMarketPrice({{ book.id }}, this)">価格調査</button>
                     <button onclick="editBook({{ book.id }})">変更</button>
                     <button onclick="deleteBook({{ book.id }}, this)" style="background-color: #dc3545;">削除</button>
@@ -283,19 +292,65 @@
             const listItem = document.createElement('li');
             listItem.className = 'book-item';
             listItem.id = `book-${book.id}`;
-            listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> ${book.publisher || 'N/A'}</p><p><strong>ISBN:</strong> ${book.isbn}</p></div><div class="book-item-actions"><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
             listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> ${book.publisher || 'N/A'}</p><p><strong>ISBN:</strong> ${book.isbn}</p><p><strong>中古価格:</strong> <span id="market-price-${book.id}">${book.market_price || 'N/A'}</span></p></div><div class="book-item-actions"><button onclick="getMarketPrice(${book.id}, this)">価格調査</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
             bookList.prepend(listItem); // リストの先頭に追加
+            updatePublisherFilter(); // 出版社フィルタを更新
         }
 
         function updateBookInList(book) {
             const listItem = document.getElementById(`book-${book.id}`);
             if (listItem) {
                 // innerHTMLを更新して表示を変更
-                listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> ${book.publisher || 'N/A'}</p><p><strong>ISBN:</strong> ${book.isbn}</p></div><div class="book-item-actions"><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
-                listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> ${book.publisher || 'N/A'}</p><p><strong>ISBN:</strong> ${book.isbn}</p><p><strong>中古価格:</strong> <span id="market-price-${book.id}">${book.market_price || 'N/A'}</span></p></div><div class="book-item-actions"><button onclick="getMarketPrice(${book.id}, this)">価格調査</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
+                listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> <span class="publisher-name">${book.publisher || 'N/A'}</span></p><p><strong>ISBN:</strong> ${book.isbn}</p><p><strong>中古価格:</strong> <span id="market-price-${book.id}">${book.market_price || 'N/A'}</span></p></div><div class="book-item-actions"><button onclick="getMarketPrice(${book.id}, this)">価格調査</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
+                updatePublisherFilter(); // 出版社フィルタを更新
             }
         }
+
+        function filterBooks() {
+            const keyword = document.getElementById('keyword-search').value.toLowerCase();
+            const selectedPublisher = document.getElementById('publisher-filter').value;
+            const bookItems = document.querySelectorAll('#book-list .book-item');
+
+            bookItems.forEach(item => {
+                const title = item.querySelector('h3').textContent.toLowerCase();
+                const author = item.querySelector('p:nth-of-type(1)').textContent.toLowerCase();
+                const publisher = item.querySelector('.publisher-name').textContent;
+
+                const keywordMatch = (keyword === '') || title.includes(keyword) || author.includes(keyword);
+                const publisherMatch = (selectedPublisher === '') || publisher === selectedPublisher;
+
+                if (keywordMatch && publisherMatch) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function updatePublisherFilter() {
+            const publisherFilter = document.getElementById('publisher-filter');
+            const existingPublishers = new Set(Array.from(publisherFilter.options).map(opt => opt.value));
+            const currentPublishers = new Set();
+
+            document.querySelectorAll('.publisher-name').forEach(span => {
+                const name = span.textContent.trim();
+                if (name && name !== 'N/A') {
+                    currentPublishers.add(name);
+                }
+            });
+
+            currentPublishers.forEach(name => {
+                if (!existingPublishers.has(name)) {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    publisherFilter.appendChild(option);
+                }
+            });
+        }
+
+        // ページ読み込み時に出版社フィルタを初期化
+        document.addEventListener('DOMContentLoaded', updatePublisherFilter);
     </script>
 </body>
 </html>
