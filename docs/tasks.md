@@ -29,11 +29,11 @@
 - [ ] 中古価格を調査するサービスの開発
     - [ ] スクレイピングまたはAPIの調査・選定
     - [ ] 価格取得ロジックの実装
-- [ ] 中古価格調査エンドポイントの実装 (`GET /api/books/{book_id}/market_price`)
+- [x] 中古価格調査エンドポイントの実装 (`GET /api/books/{book_id}/market_price`) ※注: JavaScriptで動的に価格表示されるサイトのため、正確な中古価格が取得できない場合がある。現在は取得可能な価格（定価など）で代用。
 
 ## フェーズ3: Frontendの基本構築
 
-- [ ] Frontend開発環境のセットアップ (Node.js, Vite, React/Vueなど)
+- [x] Frontend開発環境のセットアップ (Node.js, Vite, React)
 - [ ] 蔵書一覧ページの作成
 - [ ] 書籍登録ページの作成
 
