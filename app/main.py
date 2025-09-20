@@ -1,13 +1,19 @@
-from fastapi import FastAPI, Depends, HTTPException, Response, status
+from fastapi import FastAPI, Depends, HTTPException, Response, status, Request
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from pathlib import Path
 from typing import List
 
 from . import crud, models, schemas
 from .database import SessionLocal
-from .services import book_lookup
+from .services import book_lookup, market_price_scraper
 
 
 app = FastAPI()
+
+# テンプレートファイルのディレクトリを絶対パスで指定
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=str(Path(BASE_DIR, 'templates')))
 
 
 # APIリクエストごとにデータベースセッションを生成し、処理完了後に閉じるための依存関係
@@ -19,9 +25,10 @@ def get_db():
         db.close()
 
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the Book Management API"}
+@app.get("/", response_class=Response)
+def read_root(request: Request, db: Session = Depends(get_db)):
+    books = crud.get_books(db, skip=0, limit=100)
+    return templates.TemplateResponse("index.html", {"request": request, "books": books})
 
 
 @app.get("/api/lookup_book/{isbn}", response_model=schemas.BookCreate)
@@ -36,6 +43,23 @@ async def lookup_book_info(isbn: str):
 def read_books(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     books = crud.get_books(db, skip=skip, limit=limit)
     return books
+
+
+@app.get("/api/books/{book_id}/market_price", response_model=schemas.MarketPriceResponse)
+async def get_market_price(book_id: int, db: Session = Depends(get_db)):
+    """
+    指定された書籍の中古価格を調査し、データベースを更新する
+    """
+    db_book = crud.get_book(db, book_id=book_id)
+    if db_book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    price = await market_price_scraper.scrape_bookoff_online_price(db_book.isbn)
+    
+    # 取得した価格でDBを更新
+    updated_book = crud.update_book(db, db_book, schemas.BookUpdate(market_price=price))
+
+    return {"book_id": updated_book.id, "market_price": updated_book.market_price}
 
 
 @app.get("/api/books/{book_id}", response_model=schemas.Book)

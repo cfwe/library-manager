@@ -41,3 +41,8 @@ class Book(BookBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# 価格調査APIのレスポンススキーマ
+class MarketPriceResponse(BaseModel):
+    book_id: int
+    market_price: Optional[int]

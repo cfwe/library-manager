@@ -6,3 +6,6 @@ pydantic[email]
 alembic
 httpx
 pytest
+beautifulsoup4
+lxml
+jinja2
