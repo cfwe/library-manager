@@ -34,9 +34,7 @@
   
 ## フェーズ3: Frontendの基本構築
 
-- [x] Frontend開発環境のセットアップ (Node.js, Vite, React)
-- [ ] 蔵書一覧ページの作成
-- [ ] 書籍登録ページの作成
+- [ ] Frontend開発環境のセットアップ (Node.js, Vite, React) → Python:fastAPI+HTML
 - [x] Jinja2テンプレートによる基本的なUIの作成 (`templates/index.html`)
 - [x] 蔵書一覧ページの作成
 - [x] ISBNによる書籍登録機能の実装

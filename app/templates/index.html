@@ -12,11 +12,24 @@
         input, button { padding: 0.5em; font-size: 1em; width: 100%; box-sizing: border-box; }
         button { cursor: pointer; background-color: #007bff; color: white; border: none; }
         .form-group button { margin-top: 0.5em; }
-        .book-list { list-style: none; padding: 0; }
-        .book-item > div:first-child { flex-grow: 1; }
-        .book-item { border: 1px solid #ccc; padding: 1em; margin-bottom: 1em; display: flex; justify-content: space-between; align-items: center; }
-        .book-item-actions button { width: auto; margin-left: 0.5em; }
         .status-message { margin-bottom: 1em; color: #dc3545; font-weight: bold; }
+        /* テーブル用のスタイル */
+        .book-table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+        .book-table th, .book-table td { border: 1px solid #ccc; padding: 0.8em; text-align: left; vertical-align: middle; }
+        .book-table th { background-color: #f2f2f2; }
+        .book-table td small { color: #555; font-size: 0.9em; }
+        .book-table td .primary-info { font-weight: bold; }
+        .book-table .price-cell .list-price-label { font-size: 0.8em; color: #666; }
+        .book-table .actions-cell { white-space: nowrap; }
+        .book-table .actions-cell button { width: auto; margin-right: 0.5em; padding: 0.4em 0.8em; }
+        .book-table .actions-cell button {
+            display: block;
+            width: 100%;
+            margin-bottom: 0.5em;
+            padding: 0.4em 0.8em;
+        }
+        .book-table .actions-cell button:last-child { margin-bottom: 0; }
+
         /* モーダル用のスタイル */
         .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
         .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; position: relative; }
@@ -45,25 +58,39 @@
         </div>
 
         <h2>蔵書一覧</h2>
-        <ul id="book-list" class="book-list">
-            {% for book in books %}
-            <li class="book-item" id="book-{{ book.id }}">
-                <div>
-                    <h3>{{ book.title }}</h3>
-                    <p><strong>著者:</strong> {{ book.author or 'N/A' }}</p>
-                    <p><strong>出版社:</strong> <span class="publisher-name">{{ book.publisher or 'N/A' }}</span></p>
-                    <p><strong>ISBN:</strong> {{ book.isbn }}</p>
-                    <p><strong>定価:</strong> <span id="list-price-{{ book.id }}">{{ book.list_price or 'N/A' }}</span></p>
-                    <p><strong>中古価格:</strong> <span id="market-price-{{ book.id }}">{{ book.market_price or 'N/A' }}</span></p>
-                </div>
-                <div class="book-item-actions">
-                    <button onclick="updatePrices('{{ book.isbn }}', {{ book.id }}, this)">価格を更新</button>
-                    <button onclick="editBook({{ book.id }})">変更</button>
-                    <button onclick="deleteBook({{ book.id }}, this)" style="background-color: #dc3545;">削除</button>
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
+        <table id="book-table" class="book-table">
+            <thead>
+                <tr>
+                    <th>書名 / ISBN</th>
+                    <th>著者 / 出版社</th>
+                    <th>価格 (中古/定価)</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="book-list-body">
+                {% for book in books %}
+                <tr class="book-item" id="book-{{ book.id }}">
+                    <td>
+                        <span class="primary-info">{{ book.title }}</span><br>
+                        <small>{{ book.isbn }}</small>
+                    </td>
+                    <td>
+                        <span class="author-name">{{ book.author or 'N/A' }}</span><br>
+                        <small class="publisher-name">{{ book.publisher or 'N/A' }}</small>
+                    </td>
+                    <td class="price-cell">
+                        <span id="market-price-{{ book.id }}">{{ book.market_price or 'N/A' }}</span>円<br>
+                        <small class="list-price-label">(定価 <span id="list-price-{{ book.id }}">{{ book.list_price or 'N/A' }}</span>円)</small>
+                    </td>
+                    <td class="actions-cell">
+                        <button onclick="updatePrices('{{ book.isbn }}', {{ book.id }}, this)">価格</button>
+                        <button onclick="editBook({{ book.id }})">変更</button>
+                        <button onclick="deleteBook({{ book.id }}, this)" style="background-color: #dc3545;">削除</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     <!-- 手動登録モーダル -->
@@ -300,19 +327,18 @@
         }
 
         function addBookToList(book) {
-            const bookList = document.getElementById('book-list');
-            const listItem = document.createElement('li');
-            listItem.className = 'book-item';
-            listItem.id = `book-${book.id}`;
-            listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> <span class="publisher-name">${book.publisher || 'N/A'}</span></p><p><strong>ISBN:</strong> ${book.isbn}</p><p><strong>定価:</strong> <span id="list-price-${book.id}">${book.list_price || 'N/A'}</span></p><p><strong>中古価格:</strong> <span id="market-price-${book.id}">${book.market_price || 'N/A'}</span></p></div><div class="book-item-actions"><button onclick="updatePrices('${book.isbn}', ${book.id}, this)">価格を更新</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
-            bookList.prepend(listItem); // リストの先頭に追加
+            const tableBody = document.getElementById('book-list-body');
+            const newRow = tableBody.insertRow(0); // 先頭に行を挿入
+            newRow.className = 'book-item';
+            newRow.id = `book-${book.id}`;
+            newRow.innerHTML = `<td><span class="primary-info">${book.title}</span><br><small>${book.isbn}</small></td><td><span class="author-name">${book.author || 'N/A'}</span><br><small class="publisher-name">${book.publisher || 'N/A'}</small></td><td class="price-cell"><span id="market-price-${book.id}">${book.market_price || 'N/A'}</span>円<br><small class="list-price-label">(定価 <span id="list-price-${book.id}">${book.list_price || 'N/A'}</span>円)</small></td><td class="actions-cell"><button onclick="updatePrices('${book.isbn}', ${book.id}, this)">価格</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></td>`;
             updatePublisherFilter(); // 出版社フィルタを更新
         }
 
         function updateBookInList(book) {
-            const listItem = document.getElementById(`book-${book.id}`);
-            if (listItem) {
-                listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> <span class="publisher-name">${book.publisher || 'N/A'}</span></p><p><strong>ISBN:</strong> ${book.isbn}</p><p><strong>定価:</strong> <span id="list-price-${book.id}">${book.list_price || 'N/A'}</span></p><p><strong>中古価格:</strong> <span id="market-price-${book.id}">${book.market_price || 'N/A'}</span></p></div><div class="book-item-actions"><button onclick="updatePrices('${book.isbn}', ${book.id}, this)">価格を更新</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
+            const row = document.getElementById(`book-${book.id}`);
+            if (row) {
+                row.innerHTML = `<td><span class="primary-info">${book.title}</span><br><small>${book.isbn}</small></td><td><span class="author-name">${book.author || 'N/A'}</span><br><small class="publisher-name">${book.publisher || 'N/A'}</small></td><td class="price-cell"><span id="market-price-${book.id}">${book.market_price || 'N/A'}</span>円<br><small class="list-price-label">(定価 <span id="list-price-${book.id}">${book.list_price || 'N/A'}</span>円)</small></td><td class="actions-cell"><button onclick="updatePrices('${book.isbn}', ${book.id}, this)">価格</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></td>`;
                 updatePublisherFilter(); // 出版社フィルタを更新
             }
         }
@@ -320,18 +346,18 @@
         function filterBooks() {
             const keyword = document.getElementById('keyword-search').value.toLowerCase();
             const selectedPublisher = document.getElementById('publisher-filter').value;
-            const bookItems = document.querySelectorAll('#book-list .book-item');
+            const bookItems = document.querySelectorAll('#book-list-body .book-item');
 
             bookItems.forEach(item => {
-                const title = item.querySelector('h3').textContent.toLowerCase();
-                const author = item.querySelector('p:nth-of-type(1)').textContent.toLowerCase();
+                const title = item.querySelector('.primary-info').textContent.toLowerCase();
+                const author = item.querySelector('.author-name').textContent.toLowerCase();
                 const publisher = item.querySelector('.publisher-name').textContent;
 
                 const keywordMatch = (keyword === '') || title.includes(keyword) || author.includes(keyword);
                 const publisherMatch = (selectedPublisher === '') || publisher === selectedPublisher;
 
                 if (keywordMatch && publisherMatch) {
-                    item.style.display = 'flex';
+                    item.style.display = ''; // 'table-row'
                 } else {
                     item.style.display = 'none';
                 }
