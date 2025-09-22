@@ -1,6 +1,24 @@
+
 # 蔵書管理アプリ
 
 個人が所有する蔵書を効率的にデジタル化し、一元管理することを目的としたWebアプリケーションです。
+
+## はじめに
+- VSCODE + Gemini-CLI にて作成したプログラムになります。
+- 作業は、docs/　下の仕様ファイルを修正してもらいながらコーディング・デバッグを進めています。
+- ひとまず動くものということで進めましたが、コーディング経験が乏しいにも関わらず、ほぼ２日で実装でき、
+- AIの実力に驚くばかりです。
+
+## 参考文献
+[1] https://developers.google.com/gemini-code-assist/docs/overview?hl=ja
+[2] https://github.com/google-gemini/gemini-cli/releases
+[3] https://qiita.com/hiyoctrl/items/51dedea7726ab6be7ab1
+[4] https://zenn.dev/trifolium/articles/231ec8c4493e74
+
+## 環境
+OS: WINDOWS11 + WSL2
+Gemini CLI(2025.09.22)
+作業ディレクトリ: /work/work/library_manager 
 
 ## ✨ 主な機能
 
