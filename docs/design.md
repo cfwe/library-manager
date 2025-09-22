@@ -39,6 +39,7 @@
 | condition | VARCHAR(50) | 本の状態 | |
 | summary | TEXT | 要約・メモ | |
 | market_price | INTEGER | 中古価格（円） | |
+| list_price | INTEGER | 定価（円） | |
 | created_at | TIMESTAMP | 作成日時 | |
 | updated_at | TIMESTAMP | 更新日時 | |
 
@@ -52,11 +53,19 @@
 /
 ├── alembic/          # Alembicのマイグレーションスクリプト
 ├── app/              # FastAPIアプリケーションコード
-│   ├── main.py
-│   ├── crud.py
-│   ├── models.py
-│   ├── schemas.py
-│   └── database.py
+│   ├── services/     # 外部サービス連携ロジック
+│   ├── templates/    # HTMLテンプレート
+│   ├── __init__.py
+│   ├── main.py       # APIエンドポイント定義
+│   ├── crud.py       # DBのCRUD操作
+│   ├── models.py     # DBテーブル定義
+│   ├── schemas.py    # データ検証スキーマ
+│   └── database.py   # DB接続設定
+├── docs/             # ドキュメント
+├── tests/            # テストコード
 ├── alembic.ini       # Alembicの設定ファイル
+├── Dockerfile
 └── docker-compose.yml
+├── pytest.ini
+└── requirements.txt
 ```

@@ -1,12 +1,11 @@
-
 from fastapi.testclient import TestClient
 
 
-def test_read_root(client: TestClient):
-    """ルートエンドポイントのテスト"""
-    response = client.get("/")
+def test_read_books_empty(client: TestClient):
+    """書籍が一件もない場合の蔵書一覧取得テスト"""
+    response = client.get("/api/books/")
     assert response.status_code == 200
-    assert response.json() == {"message": "Welcome to the Book Management API"}
+    assert response.json() == []
 
 
 def test_create_book(client: TestClient):

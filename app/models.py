@@ -18,5 +18,6 @@ class Book(Base):
     condition = Column(String(50))
     summary = Column(Text)
     market_price = Column(Integer)
+    list_price = Column(Integer)
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())

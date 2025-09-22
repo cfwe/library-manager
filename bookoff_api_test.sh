@@ -1,0 +1,1 @@
+curl -X POST 'https://shopping.bookoff.co.jp/api/product/search' -H 'Content-Type: application/json' -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' -d '{"keyword": "9784053049032", "limit": 1, "offset": 0, "sort": "0"}'

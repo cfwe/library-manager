@@ -25,19 +25,25 @@
 - [x] ISBNから書籍情報を取得するサービスの開発 (`services/book_lookup.py`)
     - [x] openBDなどのAPI選定と仕様調査
     - [x] APIクライアントの実装
-- [x] 書籍情報取得エンドポイントの実装 (`GET /api/lookup_book/{isbn}`)
-- [ ] 中古価格を調査するサービスの開発
-    - [ ] スクレイピングまたはAPIの調査・選定
-    - [ ] 価格取得ロジックの実装
-- [x] 中古価格調査エンドポイントの実装 (`GET /api/books/{book_id}/market_price`) ※注: JavaScriptで動的に価格表示されるサイトのため、正確な中古価格が取得できない場合がある。現在は取得可能な価格（定価など）で代用。
-
+- [x] 中古価格・定価を調査するサービスの開発 (`services/market_price_scraper.py`)
+    - [x] Book-Off OnlineのWebサイトを調査
+    - [x] スクレイピングによる価格取得ロジックの実装
+- [x] 価格調査エンドポイントの実装
+    - [x] `GET /api/prices/{isbn}` (DB登録なしでの価格調査)
+    - [x] `GET /api/books/{isbn}/update_prices` (登録済み書籍の価格更新)
+  
 ## フェーズ3: Frontendの基本構築
 
 - [x] Frontend開発環境のセットアップ (Node.js, Vite, React)
 - [ ] 蔵書一覧ページの作成
 - [ ] 書籍登録ページの作成
+- [x] Jinja2テンプレートによる基本的なUIの作成 (`templates/index.html`)
+- [x] 蔵書一覧ページの作成
+- [x] ISBNによる書籍登録機能の実装
+- [x] 手動登録・編集モーダルの実装
 
 ## フェーズ4: テストと改善
 
 - [x] Backendの単体テスト・結合テスト作成 (Pytest)
 - [ ] UI/UXの改善
+- [x] UI/UXの改善（キーワード・出版社での絞り込み、全角ISBNの自動変換など）

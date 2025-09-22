@@ -15,10 +15,14 @@ class BookBase(BaseModel):
     condition: Optional[str] = None
     summary: Optional[str] = None
     market_price: Optional[int] = None
+    list_price: Optional[int] = None
 
 # 書籍作成時に使用するスキーマ (リクエストボディ)
 class BookCreate(BookBase):
-    pass
+    condition: Optional[str] = None
+    summary: Optional[str] = None
+    market_price: Optional[int] = None
+    list_price: Optional[int] = None
 
 # 書籍更新時に使用するスキーマ (リクエストボディ)
 # ISBNはユニークキーであり、通常更新しないため除外
@@ -33,6 +37,7 @@ class BookUpdate(BaseModel):
     condition: Optional[str] = None
     summary: Optional[str] = None
     market_price: Optional[int] = None
+    list_price: Optional[int] = None
 
 # 書籍読み取り時に使用するスキーマ (レスポンスボディ)
 class Book(BookBase):
@@ -42,7 +47,7 @@ class Book(BookBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-# 価格調査APIのレスポンススキーマ
-class MarketPriceResponse(BaseModel):
-    book_id: int
-    market_price: Optional[int]
+# 価格情報取得APIのレスポンススキーマ
+class PriceInfo(BaseModel):
+    market_price: Optional[int] = None
+    list_price: Optional[int] = None

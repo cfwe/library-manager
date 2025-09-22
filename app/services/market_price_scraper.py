@@ -1,56 +1,58 @@
 import httpx
 from bs4 import BeautifulSoup
-from typing import Optional
+from typing import Optional, Dict
 import re
 
 
-async def scrape_bookoff_online_price(isbn: str) -> Optional[int]:
+async def scrape_bookoff_online_price(isbn: str) -> Optional[Dict[str, int]]:
     """
-    Scrapes the used book price from Book-Off Online using an ISBN.
+    Fetches the used book price and list price from the Book-Off Online website by scraping.
 
     Args:
         isbn: The ISBN code of the book.
 
     Returns:
-        The price as an integer if found, otherwise None.
+        A dictionary with 'market_price' and 'list_price' if found, otherwise None.
     """
+    # The API is now protected, so we scrape the HTML page instead.
     search_url = f"https://shopping.bookoff.co.jp/search/keyword/{isbn}"
     headers = {
+        # A general-purpose User-Agent is less likely to be blocked.
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
 
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(search_url, headers=headers, follow_redirects=True)
+            response = await client.get(search_url, headers=headers)
             response.raise_for_status()
-            
+
             soup = BeautifulSoup(response.text, "lxml")
-            
-            # 「商品が見つからない」旨のメッセージがあるか先に確認する
-            no_result_div = soup.select_one("div.mainContent__search")
-            if no_result_div and "お探しの商品は見つかりませんでした" in no_result_div.get_text():
+
+            # Find the main price tag.
+            market_price_tag = soup.select_one("p.productItem__price") or soup.select_one("span.item-price__price")
+
+            if not market_price_tag:
                 return None
 
-            # 1. 商品一覧ページの価格要素を探す (パターンA)
-            price_element = soup.select_one("p.item-price__price")
+            price_text = market_price_tag.get_text(separator=" ", strip=True)
+            difference = 0
 
-            # 2. 見つからなければ、商品一覧ページの価格要素を探す (パターンB)
-            if not price_element:
-                price_element = soup.select_one("p.productItem__price")
-                # print("2.price_element:", price_element)
+            # "定価より...円" の差額を抽出
+            if "定価より" in price_text:
+                diff_match = re.search(r"定価より(.*)円", price_text)
+                if diff_match:
+                    difference = int(diff_match.group(1).replace(",", ""))
 
-            # 3. それでも見つからなければ、商品詳細ページの価格要素を探す
-            if not price_element:
-                price_element = soup.select_one("p.mainprice")
-
-            # すべてのパターンで見つからなければNoneを返す
-            if not price_element:
+            # 中古価格を抽出
+            market_price_match = re.search(r"(\d{1,3}(?:,\d{3})*|\d+)(?=\s*円)", price_text)
+            if not market_price_match:
                 return None
-                
-            # 要素内のテキストから最初の数値部分を抽出する
-            price_text = re.sub(r".*?([0-9,]+).*", r"\1", price_element.get_text())
-            price_text = price_text.replace(",", "") # カンマも削除
 
-            return int(price_text)
-        except (httpx.HTTPStatusError, ValueError, TypeError, IndexError):
+            market_price = int(market_price_match.group(1).replace(",", ""))
+            # 定価を計算
+            list_price = market_price + difference
+
+            return {"market_price": market_price, "list_price": list_price}
+
+        except (httpx.HTTPStatusError, ValueError, TypeError, AttributeError):
             return None

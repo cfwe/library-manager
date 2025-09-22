@@ -27,11 +27,11 @@
     <div class="container">
         <h1>蔵書管理アプリ</h1>
 
-        <div class="form-group">
+        <form onsubmit="event.preventDefault(); addBook();" class="form-group">
             <label for="isbn-lookup">ISBNコードで登録</label>
-            <input type="text" id="isbn-lookup" placeholder="ISBNコードを入力..." onkeydown="if (event.key === 'Enter') addBook()">
-            <button onclick="addBook()">書籍情報を取得して登録</button>
-        </div>
+            <input type="text" id="isbn-lookup" placeholder="ISBNコードを入力..." onblur="this.value = this.value.normalize('NFKC')">
+            <button type="submit">書籍情報を取得して登録</button>
+        </form>
 
         <div id="lookup-status" class="status-message"></div>
 
@@ -53,10 +53,11 @@
                     <p><strong>著者:</strong> {{ book.author or 'N/A' }}</p>
                     <p><strong>出版社:</strong> <span class="publisher-name">{{ book.publisher or 'N/A' }}</span></p>
                     <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+                    <p><strong>定価:</strong> <span id="list-price-{{ book.id }}">{{ book.list_price or 'N/A' }}</span></p>
                     <p><strong>中古価格:</strong> <span id="market-price-{{ book.id }}">{{ book.market_price or 'N/A' }}</span></p>
                 </div>
                 <div class="book-item-actions">
-                    <button onclick="getMarketPrice({{ book.id }}, this)">価格調査</button>
+                    <button onclick="updatePrices('{{ book.isbn }}', {{ book.id }}, this)">価格を更新</button>
                     <button onclick="editBook({{ book.id }})">変更</button>
                     <button onclick="deleteBook({{ book.id }}, this)" style="background-color: #dc3545;">削除</button>
                 </div>
@@ -85,7 +86,7 @@
         async function addBook() {
             const isbnInput = document.getElementById('isbn-lookup');
             const statusDiv = document.getElementById('lookup-status');
-            const isbn = isbnInput.value.trim();
+            let isbn = isbnInput.value.trim();
 
             statusDiv.textContent = ''; // 前のメッセージをクリア
 
@@ -93,6 +94,8 @@
                 statusDiv.textContent = 'ISBNコードを入力してください。';
                 return;
             }
+            // フロントエンド側で全角を半角に正規化する
+            isbn = isbn.normalize('NFKC');
 
             try {
                 // 1. ISBNから書籍情報を取得
@@ -141,6 +144,11 @@
             const formData = new FormData(form);
             const bookDataObject = Object.fromEntries(formData.entries());
             const bookId = bookDataObject.book_id;
+
+            // ISBNが存在する場合、送信前に正規化する
+            if (bookDataObject.isbn) {
+                bookDataObject.isbn = bookDataObject.isbn.normalize('NFKC');
+            }
 
             let url = '/api/books/';
             let method = 'POST';
@@ -230,23 +238,27 @@
             }
         }
 
-        async function getMarketPrice(bookId, element) {
-            const priceSpan = document.getElementById(`market-price-${bookId}`);
-            priceSpan.textContent = '調査中...';
+        async function updatePrices(isbn, bookId, element) {
+            const listPriceSpan = document.getElementById(`list-price-${bookId}`);
+            const marketPriceSpan = document.getElementById(`market-price-${bookId}`);
+            listPriceSpan.textContent = '調査中...';
+            marketPriceSpan.textContent = '調査中...';
             element.disabled = true;
 
             try {
-                const response = await fetch(`/api/books/${bookId}/market_price`);
+                const response = await fetch(`/api/books/${isbn}/update_prices`);
                 if (!response.ok) {
-                    throw new Error('価格の調査に失敗しました。');
+                    throw new Error('価格の更新に失敗しました。');
                 }
                 const data = await response.json();
-                priceSpan.textContent = data.market_price ? `${data.market_price}円` : '取得不可';
+                listPriceSpan.textContent = data.list_price ? `${data.list_price}円` : '取得不可';
+                marketPriceSpan.textContent = data.market_price ? `${data.market_price}円` : '取得不可';
             } catch (error) {
-                priceSpan.textContent = 'エラー';
+                listPriceSpan.textContent = 'エラー';
+                marketPriceSpan.textContent = 'エラー';
                 alert(error.message);
             } finally {
-                // 3秒後にボタンを再度有効にする
+                // 3秒後にボタンを再度有効にする（APIの連続呼び出しを防ぐため）
                 setTimeout(() => { element.disabled = false; }, 3000);
             }
         }
@@ -292,7 +304,7 @@
             const listItem = document.createElement('li');
             listItem.className = 'book-item';
             listItem.id = `book-${book.id}`;
-            listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> ${book.publisher || 'N/A'}</p><p><strong>ISBN:</strong> ${book.isbn}</p><p><strong>中古価格:</strong> <span id="market-price-${book.id}">${book.market_price || 'N/A'}</span></p></div><div class="book-item-actions"><button onclick="getMarketPrice(${book.id}, this)">価格調査</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
+            listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> <span class="publisher-name">${book.publisher || 'N/A'}</span></p><p><strong>ISBN:</strong> ${book.isbn}</p><p><strong>定価:</strong> <span id="list-price-${book.id}">${book.list_price || 'N/A'}</span></p><p><strong>中古価格:</strong> <span id="market-price-${book.id}">${book.market_price || 'N/A'}</span></p></div><div class="book-item-actions"><button onclick="updatePrices('${book.isbn}', ${book.id}, this)">価格を更新</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
             bookList.prepend(listItem); // リストの先頭に追加
             updatePublisherFilter(); // 出版社フィルタを更新
         }
@@ -300,8 +312,7 @@
         function updateBookInList(book) {
             const listItem = document.getElementById(`book-${book.id}`);
             if (listItem) {
-                // innerHTMLを更新して表示を変更
-                listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> <span class="publisher-name">${book.publisher || 'N/A'}</span></p><p><strong>ISBN:</strong> ${book.isbn}</p><p><strong>中古価格:</strong> <span id="market-price-${book.id}">${book.market_price || 'N/A'}</span></p></div><div class="book-item-actions"><button onclick="getMarketPrice(${book.id}, this)">価格調査</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
+                listItem.innerHTML = `<div><h3>${book.title}</h3><p><strong>著者:</strong> ${book.author || 'N/A'}</p><p><strong>出版社:</strong> <span class="publisher-name">${book.publisher || 'N/A'}</span></p><p><strong>ISBN:</strong> ${book.isbn}</p><p><strong>定価:</strong> <span id="list-price-${book.id}">${book.list_price || 'N/A'}</span></p><p><strong>中古価格:</strong> <span id="market-price-${book.id}">${book.market_price || 'N/A'}</span></p></div><div class="book-item-actions"><button onclick="updatePrices('${book.isbn}', ${book.id}, this)">価格を更新</button><button onclick="editBook(${book.id})">変更</button><button onclick="deleteBook(${book.id}, this)" style="background-color: #dc3545;">削除</button></div>`;
                 updatePublisherFilter(); // 出版社フィルタを更新
             }
         }

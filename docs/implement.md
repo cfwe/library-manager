@@ -24,8 +24,24 @@
     - `main.py` から `crud.create_book` を呼び出すように修正し、テストが通ることを確認する。
 
 3.  **Refactor:**
-    - `main.py` や `crud.py` のコードを見直し、変数名が適切か、重複したコードはないかなどを確認し、リファクタリングする。
+    - `main.py` や `crud.py` のコードを見直し、変数名が適切か、重複したコードはないかなどを確認し、リファクタリング（コードの清掃）を行う。
     - リファクタリング後、再度テストを実行し、すべてパスすることを確認する。
+
+## 外部サービス連携機能のTDD手順例 (価格取得機能)
+
+1.  **Red:**
+    - `tests/test_services.py` を作成。
+    - 外部サイト（Book-Off Online）から価格を取得する非同期関数 `scrape_bookoff_online_price` をテストする `test_scrape_bookoff_online_price` を書く。
+    - 既知のISBNと期待される価格を複数パターン用意し、テストが失敗することを確認する。
+
+2.  **Green:**
+    - `app/services/market_price_scraper.py` に `scrape_bookoff_online_price` 関数を実装する。
+    - `httpx` でWebページを取得し、`BeautifulSoup` でHTMLを解析して、テストケースで指定された価格が取得できる最小限のロジックを記述する。
+    - テストが通ることを確認する。
+
+3.  **Refactor:**
+    - スクレイピングのロジックを改善する（価格が見つからない場合の処理、CSSセレクタの堅牢化、エラーハンドリングの追加など）。
+    - リファクタリング後もテストがすべてパスすることを維持する。
 
 ---
 

@@ -12,11 +12,11 @@ services:
   backend:
     container_name: book_backend
     build: .
-    working_dir: /code
-    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /code/app
+    working_dir: /app
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app
     volumes:
-      # 開発中のコード変更を即時反映させるため、appディレクトリのみマウント
-      - ./app:/code/app
+      # 開発中のコード変更を即時反映させるため、プロジェクト全体をマウント
+      - .:/app
     ports:
       - "8000:8000"
     env_file:
@@ -24,15 +24,16 @@ services:
     depends_on:
       - db
     environment:
-      - PYTHONPATH=/code
+      - PYTHONPATH=/app
 
   test:
     build: .
-    working_dir: /code
-    # テスト実行時はボリュームをマウントせず、ビルド時のファイルを使用する
+    working_dir: /app
     command: pytest
+    env_file:
+      - ./.env
     environment:
-      - PYTHONPATH=/code
+      - PYTHONPATH=/app
 
 volumes:
   postgres_data:
